@@ -15,9 +15,9 @@ public class SqlToNoSql {
     public void startConversion() throws SQLException {
         Conexion con = new Conexion();
         File f1 = new File("");
-        Connection connection = null; //con.getConextion();
-       // con.setSchema("basketlite");
-        // con.createSchema();
+        Connection connection = con.getConextion();
+        con.setSchema("basketlite");
+        con.createSchema();
         con.importSQL();
         DatabaseMetaData metadata = connection.getMetaData();
         String[] tipos = {"TABLE"};

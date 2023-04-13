@@ -19,7 +19,7 @@ import java.util.Scanner;
 public class Conexion {
 
     public static final String USER = "root";
-    public static final String PASSWORD = "";
+    public static final String PASSWORD = "admin";
     private Connection conexion = null;
     @Getter
     @Setter
@@ -60,26 +60,11 @@ public class Conexion {
         jf.setFileFilter(filter);
         int option = jf.showOpenDialog(null);
         if(option == JFileChooser.APPROVE_OPTION){
-            String mysqlPath = "C:\\xampp\\mysql\\bin\\mysql.exe";
-            System.out.println("LLEGO");
             String filePath = jf.getSelectedFile().getPath();
-            String[] comando = {"mysql", "-u", "root", "-p", "basketlite", "<", "C:\\Users\\ismaelor\\Downloads\\basketlite.sql"};
-            ProcessBuilder pb = new ProcessBuilder(comando);
-            pb.redirectErrorStream(true);
-
             try {
-                Process proceso = pb.start();
-                InputStream is = proceso.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                String linea;
-                while ((linea = reader.readLine()) != null) {
-                    System.out.println(linea);
-                }
-
-                proceso.waitFor();
-                reader.close();
-                is.close();
-            } catch (IOException | InterruptedException e) {
+                String backus = "cmd /c mysql -u"+USER+" -p"+PASSWORD+" basketlite < "+filePath;
+                Runtime.getRuntime().exec(backus);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
