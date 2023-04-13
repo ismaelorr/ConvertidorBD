@@ -2,6 +2,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.convertidor.conexion.Conexion;
 
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -13,8 +14,11 @@ public class SqlToNoSql {
 
     public void startConversion() throws SQLException {
         Conexion con = new Conexion();
-        con.setSchema("baloncesto");
-        Connection connection = con.getConextion();
+        File f1 = new File("");
+        Connection connection = null; //con.getConextion();
+       // con.setSchema("basketlite");
+        // con.createSchema();
+        con.importSQL();
         DatabaseMetaData metadata = connection.getMetaData();
         String[] tipos = {"TABLE"};
         ResultSet result = metadata.getTables(connection.getCatalog(), connection.getSchema(), "%", tipos);
