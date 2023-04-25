@@ -1,5 +1,9 @@
 package org.convertidor.conexion;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +37,7 @@ public class Conexion {
             }
             else{
                 conexion = DriverManager.getConnection("jdbc:mysql://localhost/"+schema,USER,PASSWORD);
+                System.out.println("Hago esta");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,13 +66,32 @@ public class Conexion {
         int option = jf.showOpenDialog(null);
         if(option == JFileChooser.APPROVE_OPTION){
             String filePath = jf.getSelectedFile().getPath();
+            schema = jf.getSelectedFile().getName().replaceAll(".sql","");
+            createSchema();
             try {
-                String backus = "cmd /c mysql -u"+USER+" -p"+PASSWORD+" basketlite < "+filePath;
+                String backus = "cmd /c mysql -u"+USER+" -p"+PASSWORD+" "+schema+ " < "+filePath;
                 Runtime.getRuntime().exec(backus);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public MongoCollection getCollection(){
+        MongoCollection collection = null;
+        try{
+            MongoClient client = MongoClients
+                    .create("mongodb://localhost:27017/");
+            MongoDatabase db = client.getDatabase("practica04"); // Llamada a la base de datos
+            System.out.println("accede a bd " + db.getName()); // Muestra nombre de la base de datos
+            db.createCollection(schema);
+            System.out.println("hola");
+            collection = db.getCollection(schema);
+        }catch(Exception e){
+            e.printStackTrace();
+            System.out.println("No se ha podido conectar con la base de datos");
+        }
+        return collection;
     }
 
 }
