@@ -1,3 +1,5 @@
+package org.convertidor.controllers;
+
 import com.mongodb.client.MongoCollection;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -22,7 +24,6 @@ public class SqlToNoSql {
         Connection connection = con.getConextion();
         System.out.println(schema);
         DatabaseMetaData metadata = connection.getMetaData();
-        System.out.println(metadata.getMaxUserNameLength());
         String[] tipos = {"TABLE"};
         ResultSet result = metadata.getTables(connection.getCatalog(), connection.getSchema(), "%", tipos);
         ArrayList<String> tablas = new ArrayList<>();

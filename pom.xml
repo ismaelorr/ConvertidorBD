@@ -32,6 +32,19 @@
             <artifactId>mongo-java-driver</artifactId>
             <version>3.12.10</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.neodatis.odb/neodatis-odb -->
+        <dependency>
+            <groupId>org.neodatis.odb</groupId>
+            <artifactId>neodatis-odb</artifactId>
+            <version>1.9.30.689</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.github.rschmitt/dynamic-object -->
+        <dependency>
+            <groupId>com.github.rschmitt</groupId>
+            <artifactId>dynamic-object</artifactId>
+            <version>1.7.0</version>
+        </dependency>
 
     </dependencies>
 

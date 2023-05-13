@@ -1,12 +1,13 @@
-import org.convertidor.conexion.Conexion;
-import org.convertidor.conexion.SqlToNeodatis;
+import org.convertidor.controllers.ClassGenerator;
+import org.convertidor.controllers.SqlToNeodatis;
 
-import java.sql.Connection;
+import java.util.ArrayList;
 
 public class Main {
 
     public static void main(String[] args) throws Exception{
-      //  new SqlToNoSql().startConversion();
-        new SqlToNeodatis().convert();
+
+        // new SqlToNoSql().startConversion();
+            new SqlToNeodatis().convert();
     }
 }
