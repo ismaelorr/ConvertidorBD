@@ -12,7 +12,11 @@ public class ClassConstants {
 
     @Getter
     @Setter
-    private final String IMPORTS = "import lombok.*; \nimport org.convertidor.querys.*\n";
+    private final String IMPORTS = "import lombok.*; \n" +
+            "import org.convertidor.querys.*;\n" +
+            "import org.neodatis.odb.ODB;\n" +
+            "import org.neodatis.odb.ODBFactory;\n" +
+            "import java.sql.ResultSet;";
     @Getter
     @Setter
     private final String PATH = "src/main/java/org/convertidor/neodatis/";

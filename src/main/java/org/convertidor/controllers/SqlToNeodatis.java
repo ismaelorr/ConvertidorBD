@@ -6,6 +6,7 @@ import org.convertidor.model.ClassConstants;
 import org.convertidor.model.TableOrderClass;
 import org.convertidor.neodatis.ClassParams;
 import org.convertidor.neodatis.ForeignKeys;
+import org.convertidor.neodatis.NeodatisClassGenerator;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -63,6 +64,7 @@ public class SqlToNeodatis {
                 generateFiles(classParams,tablas);
         }
         tablas = orderTables(classParams,tablas);
+        new NeodatisClassGenerator().getReady(tablas,classParams);
 
     }
 
