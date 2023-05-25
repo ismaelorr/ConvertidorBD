@@ -39,12 +39,27 @@
             <version>1.9.30.689</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.codehaus.griffon.plugins</groupId>
+            <artifactId>griffon-lookandfeel-synthetica</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.github.rschmitt/dynamic-object -->
         <dependency>
             <groupId>com.github.rschmitt</groupId>
             <artifactId>dynamic-object</artifactId>
             <version>1.7.0</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.openjfx/javafx -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx</artifactId>
+            <version>11</version>
+            <type>pom</type>
+        </dependency>
+
 
     </dependencies>
 

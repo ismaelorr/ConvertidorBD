@@ -1,5 +1,4 @@
 package org.convertidor.conexion;
-
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -8,16 +7,16 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Scanner;
 
+/**
+ * @Author Ismael Orellana Bello
+ */
 @NoArgsConstructor
 @AllArgsConstructor
 public class Conexion {
@@ -84,8 +83,7 @@ public class Conexion {
                     .create("mongodb://localhost:27017/");
             MongoDatabase db = client.getDatabase("practica04"); // Llamada a la base de datos
             System.out.println("accede a bd " + db.getName()); // Muestra nombre de la base de datos
-            db.createCollection(schema);
-            System.out.println("hola");
+            //db.createCollection(schema);
             collection = db.getCollection(schema);
         }catch(Exception e){
             e.printStackTrace();

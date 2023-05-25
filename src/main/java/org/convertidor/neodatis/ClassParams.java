@@ -19,7 +19,11 @@ public class ClassParams {
 
     @Getter
     @Setter
-    ArrayList<ForeignKeys> foreignKeys = new ArrayList<>();
+    private ArrayList<ForeignKeys> foreignKeys = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private String tableName;
 
 
 }

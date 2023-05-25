@@ -19,5 +19,9 @@ public class ForeignKeys {
     @Setter
     private String columnReferenceName;
 
+    @Getter
+    @Setter
+    private int iterator;
+
 
 }
