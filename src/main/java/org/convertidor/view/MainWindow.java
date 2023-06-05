@@ -18,13 +18,21 @@ public class MainWindow extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         setTitle("Ventana con Botones de Imagen de Fondo");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
+        JLabel background = new JLabel(new ImageIcon(absolutePath+"fondo.jpg"));
+        background.setBounds(0, 0, 400, 400);
+        JPanel panel = new JPanel();
+        panel.setLayout(null); // Establece un LayoutManager nulo para poder colocar manualmente los componentes
+        panel.add(background);
+        panel.setOpaque(true);
+        add(panel);
         setLocationRelativeTo(null);
-        Container container = getContentPane();
-        container.setLayout(new BorderLayout());
-        createButtons(container);
+        //Container container = getContentPane();
+        //container.setLayout(new BorderLayout());
+        //createButtons(container);
     }
 
     private void createButtons(Container container){

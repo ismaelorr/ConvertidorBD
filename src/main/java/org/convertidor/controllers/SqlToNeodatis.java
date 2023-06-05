@@ -8,6 +8,7 @@ import org.convertidor.neodatis.ClassParams;
 import org.convertidor.neodatis.ForeignKeys;
 import org.convertidor.neodatis.NeodatisClassGenerator;
 
+import javax.swing.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -22,7 +23,7 @@ public class SqlToNeodatis {
 
     public void convert() throws SQLException {
         Conexion conexion = new Conexion();
-        conexion.setSchema("frutasyverduras");
+        conexion.setSchema("musica");
         Connection connection = conexion.getConextion();
         DatabaseMetaData metaData = connection.getMetaData();
         String[] tipos = {"TABLE"};
@@ -71,27 +72,36 @@ public class SqlToNeodatis {
             }
             classParams.add(params);
             new ClassGenerator().generate(tablas.get(i), params);
-
-            generateFiles(classParams, tablas);
         }
         tablas = orderTables(iterator, tablas);
         classParams = orderParams(tablas,classParams);
-        new NeodatisClassGenerator().getReady(tablas, classParams, conexion.getSchema());
+        generateFiles(classParams, tablas);
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Guardar archivo");
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        int userSelection = fileChooser.showSaveDialog(null);
+        String path = "";
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File selectedDirectory = fileChooser.getSelectedFile();
+            File fileToSave = new File(selectedDirectory, conexion.getSchema()+".neo");
+            JOptionPane.showMessageDialog(null, "Archivo guardado exitosamente en: " + fileToSave.getAbsolutePath());
+            path = fileToSave.getAbsolutePath();
+        }
+        new NeodatisClassGenerator().getReady(tablas, classParams, conexion.getSchema(),path);
 
     }
 
     private ArrayList<ClassParams> orderParams(ArrayList<String> tablas,ArrayList<ClassParams> classParams) {
-        for (int i = 0; i < tablas.size() - 1; i++) {
-            for (int j = 0; j < tablas.size() - i - 1; j++) {
-                if (tablas.get(j).equalsIgnoreCase(classParams.get(j + 1).getTableName())) {
-                    ClassParams temp = classParams.get(j);
-                    classParams.set(j, classParams.get(j + 1));
-                    classParams.set(j + 1, temp);
+        ArrayList<ClassParams> classParamsCopy = new ArrayList<>();
+        for(int i = 0; i < tablas.size(); i++){
+            for(int x = 0; x < classParams.size(); x++){
+                if(classParams.get(x).getTableName().equalsIgnoreCase(tablas.get(i))){
+                    classParamsCopy.add(classParams.get(x));
                 }
             }
-
         }
-        return classParams;
+        return classParamsCopy;
     }
 
     private ArrayList<String> orderTables(int [] iterator, ArrayList<String> tablas) {
@@ -119,9 +129,9 @@ public class SqlToNeodatis {
 
     private void generateFiles(ArrayList<ClassParams> classParams, ArrayList<String> tablas) {
         ClassConstants constants = new ClassConstants();
-        for(int i = 0; i < tablas.size();i++){
+        for(int i = 0; i < classParams.size();i++){
             try {
-                File file = new File(constants.getPATH() + "/temp/" + tablas.get(i) + ".txt");
+                File file = new File(constants.getPATH() + "/temp/" + classParams.get(i).getTableName() + ".txt");
                 file.createNewFile();
                 BufferedWriter bufIn = new BufferedWriter(new FileWriter(file));
                 for(int x = 0; x < classParams.get(i).getValues().size(); x++){
@@ -137,13 +147,17 @@ public class SqlToNeodatis {
 
     private void addParams(ClassParams params, String type, String columnName) {
         type = type.toLowerCase();
-        if (type.equalsIgnoreCase("varchar") || type.equalsIgnoreCase("date")) {
+        if (type.equalsIgnoreCase("varchar") || type.equalsIgnoreCase("date")
+                || type.equalsIgnoreCase("text") || type.equalsIgnoreCase("time")) {
             type = "String";
         } else if (type.equalsIgnoreCase("smallint")) {
             type = "int";
         }
         else if(type.equalsIgnoreCase("bigint")){
             type = "float";
+        }
+        else if(type.equalsIgnoreCase("decimal")){
+            type ="double";
         }
         params.getTypes().add(type);
         params.getValues().add(columnName.toLowerCase());

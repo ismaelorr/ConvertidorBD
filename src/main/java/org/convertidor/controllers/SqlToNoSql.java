@@ -9,6 +9,7 @@ import org.convertidor.conexion.Conexion;
 import javax.print.Doc;
 import java.io.File;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -43,18 +44,24 @@ public class SqlToNoSql {
                 for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
                     String type = rs.getMetaData().getColumnTypeName(i);
                     System.out.println(type);
-                    if (type.equals("VARCHAR")) {
-                        //System.out.println(rs.getString(i));
+                    if (type.equals("VARCHAR") || type.equalsIgnoreCase("Text")) {
                         document.append(rs.getMetaData().getColumnName(i),rs.getString(i));
-                    } else if (type.equals("INT")) {
-                        //System.out.println(rs.getInt(i));
+                    } else if (type.equals("INT") || type.equalsIgnoreCase("smallint") ||
+                            type.equalsIgnoreCase("bigint")) {
                        document.append(rs.getMetaData().getColumnName(i),rs.getInt(i));
                     } else if (type.equals("FLOAT")) {
-                        //System.out.println(rs.getFloat(i));
                         document.append(rs.getMetaData().getColumnName(i),rs.getFloat(i));
                     } else if (type.equals("DATE")) {
-                       // System.out.println(rs.getDate(i).toLocalDate().toString());
                         document.append(rs.getMetaData().getColumnName(i),rs.getDate(i));
+                    }
+                    else if(type.equalsIgnoreCase("decimal")){
+                        document.append(rs.getMetaData().getColumnName(i),rs.getBigDecimal(i));
+                    }
+                    else if(type.equals("TIME")){
+                        Time time = rs.getTime(i);
+                        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                        String formattedTime = sdf.format(time);
+                        document.append(rs.getMetaData().getColumnName(i),formattedTime);
                     }
                 }
                 registros.add(document);
