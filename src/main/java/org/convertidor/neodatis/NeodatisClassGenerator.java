@@ -2,19 +2,18 @@ package org.convertidor.neodatis;
 
 import org.convertidor.conexion.Conexion;
 import org.convertidor.model.ClassConstants;
+import org.convertidor.model.ClassParams;
 
 import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Locale;
 
 public class NeodatisClassGenerator {
 
 
 
 
-    public void getReady(ArrayList<String> tablas, ArrayList<ClassParams> classParams,String schema,String path) {
+    public void getReady(ArrayList<String> tablas, ArrayList<ClassParams> classParams, String schema, String path) {
         ClassConstants constants = new ClassConstants();
         File neodatisClass = new File(constants.getPATH() + "Convertidor.java");
         try {

@@ -1,29 +1,42 @@
 package org.convertidor.controllers;
 
 import com.mongodb.client.MongoCollection;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.bson.Document;
 import org.convertidor.conexion.Conexion;
-
-import javax.print.Doc;
-import java.io.File;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 
+/**
+ * Clase que proporciona funcionalidades para convertir datos de una base de datos SQL
+ * a una base de datos NoSQL.
+ *
+ *    @Author Ismael Orellana Bello
+ *    @Date 12/06/2023
+ *    @Version 1.0
+ *
+ */
 
 @NoArgsConstructor
 public class SqlToNoSql {
 
 
-    public void startConversion() throws SQLException {
-        String schema = importSql();
+    /**
+     * Inicia el proceso de conversión de datos de la base de datos SQL a MongoDB.
+     *
+     * @throws SQLException Si ocurre un error al interactuar con la base de datos SQL.
+     */
+    public void startConversion(String fileName) throws SQLException {
+        String schema = "";
+        if(fileName.length() == 0){
+           schema = importSql();
+        }else{
+            schema = fileName;
+        }
         Conexion con = new Conexion();
         con.setSchema(schema);
         Connection connection = con.getConextion();
-        System.out.println(schema);
         DatabaseMetaData metadata = connection.getMetaData();
         String[] tipos = {"TABLE"};
         ResultSet result = metadata.getTables(connection.getCatalog(), connection.getSchema(), "%", tipos);
@@ -77,6 +90,12 @@ public class SqlToNoSql {
         }
     }
 
+    /**
+     * Importa el archivo SQL en la base de datos y devuelve el esquema utilizado.
+     *
+     * @return El esquema utilizado para importar el archivo SQL.
+     * @throws SQLException Si ocurre un error al interactuar con la base de datos.
+     */
     private String importSql() throws SQLException {
         Conexion con = new Conexion();
         Connection connection = con.getConextion();

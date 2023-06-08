@@ -4,26 +4,34 @@ package org.convertidor.controllers;
 import org.convertidor.conexion.Conexion;
 import org.convertidor.model.ClassConstants;
 import org.convertidor.model.TableOrderClass;
-import org.convertidor.neodatis.ClassParams;
-import org.convertidor.neodatis.ForeignKeys;
+import org.convertidor.model.ClassParams;
+import org.convertidor.model.ForeignKeys;
 import org.convertidor.neodatis.NeodatisClassGenerator;
-
 import javax.swing.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
+
+/**
+ * Clase encargada de convertir datos de una base de datos SQL a un formato compatible con Neodatis.
+ *
+ *    @Author Ismael Orellana Bello
+ *    @Date 12/06/2023
+ *    @Version 1.0
+ */
 
 public class SqlToNeodatis {
 
-
-    public void convert() throws SQLException {
+    /**
+     * Convierte la base de datos actual a un formato compatible con el sistema NeoDatis.
+     *
+     * @throws SQLException   Si ocurre un error al ejecutar consultas SQL.
+     */
+    public void convert(String fileName) throws SQLException {
         Conexion conexion = new Conexion();
-        conexion.setSchema("musica");
+        conexion.setSchema(fileName);
         Connection connection = conexion.getConextion();
         DatabaseMetaData metaData = connection.getMetaData();
         String[] tipos = {"TABLE"};
@@ -92,6 +100,13 @@ public class SqlToNeodatis {
 
     }
 
+    /**
+     * Ordena los parámetros de clase en función del orden de las tablas.
+     *
+     * @param tablas      Lista de tablas ordenadas.
+     * @param classParams Lista de parámetros de clase.
+     * @return Una nueva lista de parámetros de clase ordenada según el orden de las tablas.
+     */
     private ArrayList<ClassParams> orderParams(ArrayList<String> tablas,ArrayList<ClassParams> classParams) {
         ArrayList<ClassParams> classParamsCopy = new ArrayList<>();
         for(int i = 0; i < tablas.size(); i++){
@@ -103,7 +118,13 @@ public class SqlToNeodatis {
         }
         return classParamsCopy;
     }
-
+    /**
+     * Ordena las tablas en función del número de iteraciones requeridas.
+     *
+     * @param iterator Un array de enteros que representa el número de iteraciones requeridas para cada tabla.
+     * @param tablas   Lista de tablas a ordenar.
+     * @return Una nueva lista de tablas ordenadas según el número de iteraciones requeridas.
+     */
     private ArrayList<String> orderTables(int [] iterator, ArrayList<String> tablas) {
         ArrayList<String> orderedTables = new ArrayList<>();
         ArrayList<TableOrderClass> order = new ArrayList<>();
@@ -127,6 +148,12 @@ public class SqlToNeodatis {
         return orderedTables;
     }
 
+    /**
+     * Genera archivos de texto para cada tabla con los tipos de datos correspondientes.
+     *
+     * @param classParams Lista de objetos ClassParams que contienen información de las tablas y sus tipos de datos.
+     * @param tablas      Lista de nombres de tablas.
+     */
     private void generateFiles(ArrayList<ClassParams> classParams, ArrayList<String> tablas) {
         ClassConstants constants = new ClassConstants();
         for(int i = 0; i < classParams.size();i++){
@@ -145,6 +172,13 @@ public class SqlToNeodatis {
 
     }
 
+    /**
+     * Agrega los parámetros de tipo y nombre de columna a un objeto ClassParams.
+     *
+     * @param params      Objeto ClassParams al que se agregarán los parámetros.
+     * @param type        Tipo de dato de la columna.
+     * @param columnName  Nombre de la columna.
+     */
     private void addParams(ClassParams params, String type, String columnName) {
         type = type.toLowerCase();
         if (type.equalsIgnoreCase("varchar") || type.equalsIgnoreCase("date")
@@ -163,7 +197,15 @@ public class SqlToNeodatis {
         params.getValues().add(columnName.toLowerCase());
     }
 
-
+    /**
+     * Obtiene las claves foráneas de una tabla.
+     *
+     * @param connection  Conexión a la base de datos.
+     * @param metaData    Metadatos de la base de datos.
+     * @param tableName   Nombre de la tabla.
+     * @return            Lista de claves extranjeras de la tabla.
+     * @throws SQLException Si ocurre un error al obtener las claves extranjeras.
+     */
     private ArrayList<ForeignKeys> obtenerClaves(Connection connection, DatabaseMetaData metaData, String tableName) throws SQLException {
        ArrayList <ForeignKeys> keys = new ArrayList<>();
         ResultSet foreignKeys = metaData.getImportedKeys(connection.getCatalog(), null, tableName);

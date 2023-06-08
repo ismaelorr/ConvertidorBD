@@ -7,8 +7,7 @@ import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 import org.convertidor.conexion.Conexion;
 import org.convertidor.model.TableTypesClass;
-
-import javax.print.Doc;
+import javax.swing.*;
 import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,30 +15,63 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+/**
+ * Clase que contiene métodos para migrar datos de una base de datos NoSQL a una base de datos SQL.
+ *
+ *   @Author Ismael Orellana Bello
+ *   @Date 12/06/2023
+ *   @Version 1.0
+ */
+
 public class NoSqlToSql {
 
-    public void generateDataBase() throws IOException, SQLException {
-        Conexion conexion = new Conexion(null, "recetas");
+    private ArrayList<TableTypesClass> tableProperties = new ArrayList<>();
+    private ArrayList<String> names = new ArrayList<>();
+    private ArrayList<String> types = new ArrayList<>();
+    private ArrayList<String> objects = new ArrayList<>();
+    private  ArrayList<String> tableNames = new ArrayList<>();
+
+    /**
+     * Genera una conversión a SQL a partir de los documentos de una colección de MongoDB.
+     * El archivo JSON se guarda en la ubicación especificada.
+     * Además, se invoca al método generateTables() para generar las tablas correspondientes.
+     *
+     * @throws IOException  Si ocurre un error de lectura o escritura en el archivo.
+     * @throws SQLException Si ocurre un error al obtener la conexión a la base de datos.
+     */
+    public void generateDataBase(String fileName) throws IOException, SQLException {
+        Conexion conexion = new Conexion(null, fileName);
+        //Obtener colección seleccionada
         MongoCollection<Document> collection = conexion.getCollection();
-        FindIterable<Document> documents = collection.find();
         Document document = collection.find().first();
         String jsonName = collection.getNamespace().getCollectionName();
+        //Crear TXT para acceder a sus datos
         File f1 = new File("src/main/java/org/convertidor/model/json/"+jsonName+".txt");
         f1.createNewFile();
         BufferedWriter bufIn = new BufferedWriter(new FileWriter(f1));
         String json = "";
         if (document != null) {
+            //Generar JSON
             JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
             json = document.toJson(settings);
         } else {
-            System.out.println("No se encontraron documentos en la colección.");
+            JOptionPane.showMessageDialog(null,"No se ha encontrado la colección seleccionada");
         }
-        System.out.println(json);
         bufIn.write(json);
         bufIn.close();
         generateTables(jsonName,f1,collection);
     }
-
+    /**
+     * Genera las tablas correspondientes en la base de datos a partir del archivo JSON y la colección de MongoDB.
+     * Se extraen los nombres y tipos de las columnas de las propiedades del archivo JSON y se crean las tablas en la base de datos.
+     * También se crean tablas para los objetos anidados en el archivo JSON.
+     *
+     * @param jsonName    El nombre del archivo JSON y de la tabla principal a crear.
+     * @param f1          El archivo JSON que contiene los datos.
+     * @param collection  La colección de MongoDB que se utilizó para generar el archivo JSON.
+     * @throws IOException  Si ocurre un error de lectura o escritura en el archivo JSON.
+     * @throws SQLException Si ocurre un error al obtener la conexión a la base de datos.
+     */
     private void generateTables(String jsonName,File f1,MongoCollection<Document> collection) throws IOException, SQLException {
         Conexion conexion = new Conexion();
         conexion.getConextion();
@@ -47,11 +79,6 @@ public class NoSqlToSql {
         conexion.createSchema();
         conexion.closeConnection();
         BufferedReader bufferedReader = new BufferedReader(new FileReader(f1));
-        ArrayList<TableTypesClass> tableProperties = new ArrayList<>();
-        ArrayList<String> names = new ArrayList<>();
-        ArrayList<String> types = new ArrayList<>();
-        ArrayList<String> objects = new ArrayList<>();
-        ArrayList<String> tableNames = new ArrayList<>();
         boolean object = false;
         String objectText = "";
         int counter = 0;
@@ -133,7 +160,17 @@ public class NoSqlToSql {
         createObjectTables(objects,connection,conexion.getSchema(),collection,tableNames);
 
     }
-
+    /**
+     * Crea las tablas correspondientes a los objetos anidados en el archivo JSON.
+     *
+     * @param objects      Lista de cadenas que representan los objetos anidados en el archivo JSON.
+     * @param connection   Conexión a la base de datos.
+     * @param schema       Nombre del esquema de la base de datos.
+     * @param collection   Colección de MongoDB que se utilizó para generar el archivo JSON.
+     * @param tableNames   Lista de nombres de las tablas a crear.
+     * @throws IOException     Si ocurre un error de lectura o escritura en el archivo JSON.
+     * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
+     */
     private void createObjectTables(ArrayList<String> objects,Connection connection,String schema,MongoCollection<Document> collection,ArrayList<String> tableNames) throws IOException, SQLException {
        boolean condition = false;
         for(int i = 0 ; i < objects.size();i++) {
@@ -212,41 +249,7 @@ public class NoSqlToSql {
                         }
                         cursor.close();
                 } else {
-                   /** System.out.println(line);
-                    String splitLines [] = line.split("\"");
-                    System.out.println(splitLines[1]);
-                    ArrayList<String> values = new ArrayList<>();
-                    values.add(splitLines[1]);
-                    Statement st = connection.createStatement();
-                    String query = "Create table if not exists " + tableNames.get(i) + " ( " +
-                            tableNames.get(i) + "id INT AUTO_INCREMENT PRIMARY KEY,"+values.get(0)+" VARCHAR(2000),";
-                    String preparedQuery = "Insert into "+tableNames.get(i)+" values(?,?";
-                    for(int x = 0; x < splitLines.length; x++) {
-                        System.out.println(splitLines[x]);
-                        if (splitLines[x].contains("],")) {
-                            values.add(splitLines[x + 1]);
-                            query+=splitLines[x+1]+" VARCHAR(2000),";
-                            preparedQuery += "?,";
-                        }
-                    }
-                    query = query.substring(0,query.length()-1);
-                    preparedQuery+="?)";
-                    query += " " + schema + "id INT, FOREIGN KEY (" + schema + "id) REFERENCES " + schema + "(id));";
-                    st.executeUpdate(query);
-                    FindIterable<Document> documents = collection.find();
-                    MongoCursor<Document> cursor = documents.iterator();
-                    System.out.println(query);
-                    while (cursor.hasNext()) {
-                        for (int x = 0; x < values.size(); x++) {
-                            PreparedStatement psm = connection.prepareStatement(preparedQuery);
-                            Document document = cursor.next();
-                            ArrayList<Object> array = (ArrayList<Object>) document.getList(values.get(x), Object.class);
 
-                        }
-                    }
-                    cursor.close();
-                }
-**/
                 }
             } catch (Exception e) {
 
@@ -254,7 +257,17 @@ public class NoSqlToSql {
             condition = false;
         }
     }
-
+    /**
+     * Inserta los valores en una tabla específica en la base de datos.
+     *
+     * @param tableName    Nombre de la tabla en la que se insertarán los valores.
+     * @param names        Lista de nombres de las columnas en la tabla.
+     * @param types        Lista de tipos de datos de las columnas en la tabla.
+     * @param connection   Conexión a la base de datos.
+     * @param collection   Colección de MongoDB que se utilizó para generar el archivo JSON.
+     * @param condition    Condición para determinar si se debe realizar una modificación en el nombre de la tabla.
+     * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
+     */
     private void insertValues(String tableName, ArrayList<String> names, ArrayList<String> types, Connection connection,
                               MongoCollection<Document> collection,boolean condition) throws SQLException {
 
@@ -293,7 +306,15 @@ public class NoSqlToSql {
             fk++;
         }
     }
-
+    /**
+     * Crea tablas adicionales en la base de datos según las propiedades de los objetos de tipo TableTypesClass.
+     *
+     * @param tableTypesClass   Objeto TableTypesClass que contiene las propiedades de las tablas adicionales.
+     * @param connection        Conexión a la base de datos.
+     * @param schema            Esquema de la base de datos.
+     * @param collection        Colección de MongoDB que se utilizó para generar el archivo JSON.
+     * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
+     */
     private void createOtherTables(TableTypesClass tableTypesClass, Connection connection,String schema,MongoCollection<Document> collection) throws SQLException {
         for (int i = 0; i < tableTypesClass.getDataType().size(); i++) {
             boolean condition = false;
@@ -359,8 +380,15 @@ public class NoSqlToSql {
                 }
             }
         }
-
-
+    /**
+     * Crea la primera tabla en la base de datos según las propiedades de los objetos de tipo TableTypesClass.
+     *
+     * @param tableTypesClass   Objeto TableTypesClass que contiene las propiedades de la tabla principal.
+     * @param connection        Conexión a la base de datos.
+     * @param collection        Colección de MongoDB que se utilizó para generar el archivo JSON.
+     * @param schema            Esquema de la base de datos.
+     * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
+     */
             private void createFirstTable (TableTypesClass tableTypesClass, Connection connection,MongoCollection<Document> collection,String schema) throws SQLException {
                 String query = "Create table if not exists " + schema + " (" +
                         "id INT AUTO_INCREMENT PRIMARY KEY,";
