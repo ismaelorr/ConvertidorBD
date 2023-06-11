@@ -29,11 +29,13 @@ public class SqlToNoSql {
      */
     public void startConversion(String fileName) throws SQLException {
         String schema = "";
+        //Importar o obtener schema
         if(fileName.length() == 0){
            schema = importSql();
         }else{
             schema = fileName;
         }
+        //Crear la conexión
         Conexion con = new Conexion();
         con.setSchema(schema);
         Connection connection = con.getConextion();
@@ -41,22 +43,25 @@ public class SqlToNoSql {
         String[] tipos = {"TABLE"};
         ResultSet result = metadata.getTables(connection.getCatalog(), connection.getSchema(), "%", tipos);
         ArrayList<String> tablas = new ArrayList<>();
+        //Obtener nombres de las tablas de la base de datos
         while (result.next()) {
             tablas.add(result.getString("TABLE_NAME"));
         }
         MongoCollection <Document> collection = con.getCollection();
         ArrayList <Document> docs = new ArrayList<>();
         Document mainDocument = new Document();
+        //Recorrer todas las tablas
         for(int x = 0; x<tablas.size();x++) {
             Statement st = connection.createStatement();
             ResultSet rs = st.executeQuery("Select * from " + tablas.get(x));
             ArrayList<Document> registros = new ArrayList<>();
+            //Obtener todos los registros de la base de datos
             while (rs.next()) {
-                System.out.println(rs.getMetaData().getColumnCount());
+                //Crear documento principal
                 Document document = new Document();
+                //Saber el tipo de dato
                 for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
                     String type = rs.getMetaData().getColumnTypeName(i);
-                    System.out.println(type);
                     if (type.equals("VARCHAR") || type.equalsIgnoreCase("Text")) {
                         document.append(rs.getMetaData().getColumnName(i),rs.getString(i));
                     } else if (type.equals("INT") || type.equalsIgnoreCase("smallint") ||
@@ -81,12 +86,13 @@ public class SqlToNoSql {
             }
             st.close();
             rs.close();
+            //Añadir a la base de datos
             mainDocument.append(tablas.get(x),registros);
         }
         try {
             collection.insertOne(mainDocument);
         }catch (Exception e){
-            e.printStackTrace();
+
         }
     }
 

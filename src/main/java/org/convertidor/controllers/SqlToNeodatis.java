@@ -30,20 +30,25 @@ public class SqlToNeodatis {
      * @throws SQLException   Si ocurre un error al ejecutar consultas SQL.
      */
     public void convert(String fileName) throws SQLException {
+        //Borrar archivos temporales usados anteriormente
+        deleteFiles();
         Conexion conexion = new Conexion();
         conexion.setSchema(fileName);
+        //Obtener los metadatos de la base de datos
         Connection connection = conexion.getConextion();
         DatabaseMetaData metaData = connection.getMetaData();
         String[] tipos = {"TABLE"};
         ResultSet result = metaData.getTables(connection.getCatalog(), connection.getSchema(), "%", tipos);
         ArrayList<String> tablas = new ArrayList<>();
         ArrayList<ClassParams> classParams = new ArrayList<>();
+        //Obtener los nombres de las tablas
         while (result.next()) {
             String tableName = result.getString("TABLE_NAME");
             tablas.add(tableName.toUpperCase().charAt(0) + tableName.substring(1));
         }
 
         int iterator [] = new int[tablas.size()];
+        //Obtener claves foráneas
         for(int i = 0; i < tablas.size();i++){
             int temporal = 0;
             ArrayList<ForeignKeys> copykeys = obtenerClaves(connection,metaData,tablas.get(i));
@@ -52,9 +57,8 @@ public class SqlToNeodatis {
             }
             iterator[i] = temporal;
         }
-
         for (int i = 0; i < tablas.size(); i++) {
-            System.out.println("TABLA: " + tablas.get(i));
+            //Rellenar Clases con el tipo de dato y el nombre del campo
             ArrayList<ForeignKeys> keys = obtenerClaves(connection, metaData, tablas.get(i));
             Statement st = connection.createStatement();
             ResultSet rs = st.executeQuery("Select * from " + tablas.get(i));
@@ -81,23 +85,58 @@ public class SqlToNeodatis {
             classParams.add(params);
             new ClassGenerator().generate(tablas.get(i), params);
         }
+        //Ordenar tablas según el número de claves foráneas que tenga
         tablas = orderTables(iterator, tablas);
         classParams = orderParams(tablas,classParams);
         generateFiles(classParams, tablas);
+        //Guardar archivo
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Guardar archivo");
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
         int userSelection = fileChooser.showSaveDialog(null);
         String path = "";
+        //Seleccionar si le ha dado a guardar o a cancelar
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File selectedDirectory = fileChooser.getSelectedFile();
             File fileToSave = new File(selectedDirectory, conexion.getSchema()+".neo");
             JOptionPane.showMessageDialog(null, "Archivo guardado exitosamente en: " + fileToSave.getAbsolutePath());
             path = fileToSave.getAbsolutePath();
+            new NeodatisClassGenerator().getReady(tablas, classParams, conexion.getSchema(),path);
         }
-        new NeodatisClassGenerator().getReady(tablas, classParams, conexion.getSchema(),path);
+        else{
+            JOptionPane.showMessageDialog(null,"Operación cancelada");
+        }
+    }
 
+    /**
+     * Borrar archivos que se hayan usado temporalmente
+     */
+    private void deleteFiles() {
+        String path = new ClassConstants().getPATH();
+        File f1 = new File(path);
+        if(f1.isDirectory()) {
+            //Borrar clases
+            File listF1 [] = f1.listFiles();
+            if (listF1.length > 2) {
+                for (int i = 0; i < listF1.length; i++) {
+                    if (!listF1[i].getName().equalsIgnoreCase("temp") && !listF1[i].getName().equalsIgnoreCase("NeodatisClassGenerator.java")) {
+                        listF1[i].delete();
+                    }
+                }
+                File f2 = new File(path + "/temp");
+                if (f2.isDirectory()) {
+                    File listF2[] = f2.listFiles();
+                    //Borrar txt
+                    for (int i = 0; i < listF1.length; i++) {
+                        try {
+                            listF2[i].delete();
+                        }catch (Exception e){
+
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -109,6 +148,7 @@ public class SqlToNeodatis {
      */
     private ArrayList<ClassParams> orderParams(ArrayList<String> tablas,ArrayList<ClassParams> classParams) {
         ArrayList<ClassParams> classParamsCopy = new ArrayList<>();
+        //Ordenar parámetros
         for(int i = 0; i < tablas.size(); i++){
             for(int x = 0; x < classParams.size(); x++){
                 if(classParams.get(x).getTableName().equalsIgnoreCase(tablas.get(i))){
@@ -128,10 +168,12 @@ public class SqlToNeodatis {
     private ArrayList<String> orderTables(int [] iterator, ArrayList<String> tablas) {
         ArrayList<String> orderedTables = new ArrayList<>();
         ArrayList<TableOrderClass> order = new ArrayList<>();
+        //Añadir tablas y número de claves foráneas
         for(int i = 0; i < tablas.size();i++){
             order.add(new TableOrderClass(tablas.get(i),iterator[i]));
         }
         int aux = 0;
+        //Ordenar por el método de la burbuja en base a la cantidad de claves foráneas
         for (int i = 0; i < order.size() - 1; i++) {
             for (int j = 0; j < order.size() - i - 1; j++) {
                 if (order.get(j).getCantidad() > order.get(j + 1).getCantidad()) {
@@ -143,7 +185,6 @@ public class SqlToNeodatis {
         }
         for(int i = 0; i < order.size();i++){
             orderedTables.add(order.get(i).getNombre());
-            System.out.println(order.get(i).getNombre());
         }
         return orderedTables;
     }
@@ -158,6 +199,7 @@ public class SqlToNeodatis {
         ClassConstants constants = new ClassConstants();
         for(int i = 0; i < classParams.size();i++){
             try {
+                //Generar archivos temporales
                 File file = new File(constants.getPATH() + "/temp/" + classParams.get(i).getTableName() + ".txt");
                 file.createNewFile();
                 BufferedWriter bufIn = new BufferedWriter(new FileWriter(file));
@@ -180,11 +222,14 @@ public class SqlToNeodatis {
      * @param columnName  Nombre de la columna.
      */
     private void addParams(ClassParams params, String type, String columnName) {
+        //Añadir tipos de datos
         type = type.toLowerCase();
         if (type.equalsIgnoreCase("varchar") || type.equalsIgnoreCase("date")
                 || type.equalsIgnoreCase("text") || type.equalsIgnoreCase("time")) {
             type = "String";
-        } else if (type.equalsIgnoreCase("smallint")) {
+        } else if (type.equalsIgnoreCase("smallint") ||
+                type.equalsIgnoreCase("bigInt") || type.equalsIgnoreCase("tniyInt") ||
+                type.equalsIgnoreCase("bit")){
             type = "int";
         }
         else if(type.equalsIgnoreCase("bigint")){
@@ -210,12 +255,12 @@ public class SqlToNeodatis {
        ArrayList <ForeignKeys> keys = new ArrayList<>();
         ResultSet foreignKeys = metaData.getImportedKeys(connection.getCatalog(), null, tableName);
         int iterator = 0;
+        //Obtener metadatos como las claves foráneas, a que tabla pertenecen...
         while (foreignKeys.next()) {
             ForeignKeys key = new ForeignKeys();
             String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
             String pkTableName = foreignKeys.getString("PKTABLE_NAME");
             String pkColumnName = foreignKeys.getString("PKCOLUMN_NAME");
-            System.out.println(fkColumnName);
             key.setColumn(fkColumnName);
             key.setTableReference(pkTableName);
             key.setColumnReferenceName(pkColumnName);

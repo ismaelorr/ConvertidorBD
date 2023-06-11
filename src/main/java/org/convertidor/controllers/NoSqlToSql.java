@@ -25,10 +25,15 @@ import java.util.ArrayList;
 
 public class NoSqlToSql {
 
+    //ArrayList de TableTypeClass con las propiedades de la tabla
     private ArrayList<TableTypesClass> tableProperties = new ArrayList<>();
+    //ArrayList de nombres
     private ArrayList<String> names = new ArrayList<>();
+    //ArrayList de tipos
     private ArrayList<String> types = new ArrayList<>();
+    //ArrayList de objetos a crear
     private ArrayList<String> objects = new ArrayList<>();
+    //ArrayList de nombre de tablas
     private  ArrayList<String> tableNames = new ArrayList<>();
 
     /**
@@ -40,6 +45,7 @@ public class NoSqlToSql {
      * @throws SQLException Si ocurre un error al obtener la conexión a la base de datos.
      */
     public void generateDataBase(String fileName) throws IOException, SQLException {
+        deleteFiles();
         Conexion conexion = new Conexion(null, fileName);
         //Obtener colección seleccionada
         MongoCollection<Document> collection = conexion.getCollection();
@@ -61,6 +67,22 @@ public class NoSqlToSql {
         bufIn.close();
         generateTables(jsonName,f1,collection);
     }
+
+    /**
+     * Método que borra los archivos temporales utilizados previamente
+     */
+    private void deleteFiles() {
+        File f1 = new File("src/main/java/org/convertidor/model/json");
+        if(f1.isDirectory()) {
+            File f1List[] = f1.listFiles();
+            if (f1List.length > 0) {
+                for (int i = 0; i < f1List.length; i++) {
+                   f1List[i].delete();
+                }
+            }
+        }
+    }
+
     /**
      * Genera las tablas correspondientes en la base de datos a partir del archivo JSON y la colección de MongoDB.
      * Se extraen los nombres y tipos de las columnas de las propiedades del archivo JSON y se crean las tablas en la base de datos.
@@ -73,6 +95,7 @@ public class NoSqlToSql {
      * @throws SQLException Si ocurre un error al obtener la conexión a la base de datos.
      */
     private void generateTables(String jsonName,File f1,MongoCollection<Document> collection) throws IOException, SQLException {
+        //Crear conexión
         Conexion conexion = new Conexion();
         conexion.getConextion();
         conexion.setSchema(jsonName);
@@ -84,15 +107,16 @@ public class NoSqlToSql {
         int counter = 0;
         try{
             while(true){
+                //Lectura de todas las líneas del JSON
                String line = bufferedReader.readLine();
-                System.out.println(line);
                if(counter<4){
                    counter++;
                    continue;
                }
                else{
                    if(!line.contains("[") && !line.contains("{") && !line.contains("]") && !object){
-                      String split[] =  line.split(":");
+                       //Añadir nombre y tipo que no sea ni objeto ni Array
+                      String split[] =  line.split(":"); //Formateo de datos
                       if(split.length > 1){
                           String split2 [] = split[0].split("\"");
                           if(split2[1].contains(" ")){
@@ -113,13 +137,15 @@ public class NoSqlToSql {
                       }
                    else{
                        if(line.contains("{") && !object){
+                           //Añadir parámetros de tipo objeto
                            object = true;
-                           String split[] = line.split(":");
+                           String split[] = line.split(":"); //Formateo de datos
                            names.add(split[0].replaceAll("\"","").trim() + "id");
                             tableNames.add(split[0].replaceAll("\"","").trim());
                            types.add("{");
                        }
                        else if(object){
+                           //Añadir líneas para posterioremente sacar los datos
                            objectText+=line;
                            if(line.contains("}")){
                                objects.add(objectText);
@@ -128,11 +154,13 @@ public class NoSqlToSql {
                            }
                        }
                        else if(line.contains("[") && !object) {
+                           //Añadir tipos Array
                            String split[] = line.split(":");
                            String split2[] = split[0].split("\"");
-                           names.add(split2[1] + "id");
+                           names.add(split2[1] + "id"); //Formateo de datos
                            String nextLine = bufferedReader.readLine();
                            String type = "";
+                           //Añadir tipo
                            if(nextLine.contains("{")){
                                type = "[{";
                                tableNames.add(split2[1]);
@@ -173,21 +201,24 @@ public class NoSqlToSql {
      */
     private void createObjectTables(ArrayList<String> objects,Connection connection,String schema,MongoCollection<Document> collection,ArrayList<String> tableNames) throws IOException, SQLException {
        boolean condition = false;
+       //Recorrer todos los objetos que se encuentran en el JSON
         for(int i = 0 ; i < objects.size();i++) {
             try {
                 String line = objects.get(i);
-                System.out.println(line);
                 ArrayList<String> names = new ArrayList<>();
                 ArrayList<String> types = new ArrayList<>();
                 if (line.contains("}") && !line.contains("{") && !line.contains("[") ) {
+                    //Saber si es un objeto normal o un objeto con arrays
                     String splitParameters[] = line.split(",");
                     for (int x = 0; x < splitParameters.length; x++) {
                         if (splitParameters[x].contains("}")) {
+                            //Formateo de datos
                             splitParameters[x] = splitParameters[x].replaceAll("}", "");
                         }
                         String split2[] = splitParameters[x].split(":");
                         split2[0] = split2[0].replaceAll("\"", "");
                         names.add(split2[0].trim());
+                        //Añadir el tipo de dato
                         if (split2[1].contains("\"")) {
                             types.add("VARCHAR(2000)");
                         } else if (split2[1].contains(".")) {
@@ -195,12 +226,13 @@ public class NoSqlToSql {
                         } else {
                             types.add("Int");
                         }
-                        System.out.println(splitParameters[x]);
                     }
+                    //Formateo de datos
                     if(tableNames.get(i).contains(" ")){
                         tableNames.set(i,tableNames.get(i).replaceAll(" ","_"));
                         condition = true;
                     }
+                    //Creación de la query para crear la tabla y para insertar los datos posteriormente
                     String query = "Create table if not exists " + tableNames.get(i) + " ( " +
                             tableNames.get(i) + "id INT AUTO_INCREMENT PRIMARY KEY,";
                     String preparedQuery = "Insert into " + tableNames.get(i) + " values(?,";
@@ -211,11 +243,10 @@ public class NoSqlToSql {
                     query += " " + schema + "id INT, FOREIGN KEY (" + schema + "id) REFERENCES " + schema + "(id));";
                     preparedQuery += "?)";
                     Statement st = connection.createStatement();
-                    System.out.println(query);
-                    System.out.println(preparedQuery);
                     st.executeUpdate(query);
                     st.close();
                     int primaryKey = 1;
+                    //Cursor para acceder a todos los objetos de la base ded atos
                     MongoCursor<Document> cursor = collection.find().iterator();
                     int fk = 1;
                         while (cursor.hasNext()) {
@@ -223,6 +254,7 @@ public class NoSqlToSql {
                                 Document documentoPrincipal = cursor.next();
                                 ArrayList<Document> array = (ArrayList<Document>) documentoPrincipal.getList(tableNames.get(i), Document.class);
                                 for (Document documento : array) {
+                                    //Preparar los datos para la sentencia
                                     PreparedStatement psm = connection.prepareStatement(preparedQuery);
                                     int counter = 1;
                                     psm.setInt(counter++, primaryKey++);
@@ -248,8 +280,6 @@ public class NoSqlToSql {
                             }
                         }
                         cursor.close();
-                } else {
-
                 }
             } catch (Exception e) {
 
@@ -270,13 +300,14 @@ public class NoSqlToSql {
      */
     private void insertValues(String tableName, ArrayList<String> names, ArrayList<String> types, Connection connection,
                               MongoCollection<Document> collection,boolean condition) throws SQLException {
-
+        //Preparar sentencias de inserción
         String query = "Insert into "+tableName+" values(?,";
         for(int i = 0; i <names.size(); i++){
             query+="?,";
         }
         query+="?)";
         int primaryKey = 1;
+        //Recorrer todos los objetos
         MongoCursor<Document> cursor = collection.find().iterator();
         int fk = 1;
         if(condition){
@@ -288,6 +319,7 @@ public class NoSqlToSql {
             PreparedStatement psm = connection.prepareStatement(query);
             int counter = 1;
             psm.setInt(counter++, primaryKey++);
+            //Saber el tipo de dato
             for (int x = 0; x < names.size(); x++) {
                 if (types.get(x).equalsIgnoreCase("INT")) {
                     try {
@@ -316,52 +348,56 @@ public class NoSqlToSql {
      * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
      */
     private void createOtherTables(TableTypesClass tableTypesClass, Connection connection,String schema,MongoCollection<Document> collection) throws SQLException {
+        //Recorrer todos los tipos de datos que son Arrays
         for (int i = 0; i < tableTypesClass.getDataType().size(); i++) {
             boolean condition = false;
+            //Saber el tipo de dato
             if (!tableTypesClass.getDataType().get(i).equalsIgnoreCase("[{") &&
                     tableTypesClass.getDataType().get(i).contains("[") &&
                     !tableTypesClass.getDataType().get(i).contains("{")) {
-                if(tableTypesClass.getName().get(i).contains(" ")){
-                    String aux = tableTypesClass.getName().get(i).replaceAll(" ","_");
+                if (tableTypesClass.getName().get(i).contains(" ")) {
+                    String aux = tableTypesClass.getName().get(i).replaceAll(" ", "_");
                     condition = true;
-                    tableTypesClass.getName().set(i,aux);
+                    tableTypesClass.getName().set(i, aux);
                 }
                 String tableName = tableTypesClass.getName().get(i).replaceAll("id", "");
                 String type = "";
                 if (tableTypesClass.getDataType().get(i).equalsIgnoreCase("[S")) {
                     type = "VARCHAR(255)";
-                } else if(tableTypesClass.getDataType().get(i).equalsIgnoreCase("boolean")){
+                } else if (tableTypesClass.getDataType().get(i).equalsIgnoreCase("boolean")) {
                     type = "BOOLEAN";
-                }
-                else{
+                } else {
                     type = "INT";
                 }
+                //Preparar Querys para la inserción de los datos y la creación de las tablas
                 Statement st = connection.createStatement();
                 String query = "Create table  if not exists " + tableName + " ( " +
                         tableTypesClass.getName().get(i) + " INT AUTO_INCREMENT PRIMARY KEY," +
-                        tableName + " " + type + ", " + schema + "id INT, FOREIGN KEY ("+ schema+"id) REFERENCES "+
-                        schema+"(id));";
-                System.out.println(query);
+                        tableName + " " + type + ", " + schema + "id INT, FOREIGN KEY (" + schema + "id) REFERENCES " +
+                        schema + "(id));";
                 st.executeUpdate(query);
                 st.close();
                 FindIterable<Document> documents = collection.find();
                 MongoCursor<Document> cursor = documents.iterator();
                 int counter = 1;
                 int pk = 1;
+                //Recorrer todos los Arrays de la base de datos
                 while (cursor.hasNext()) {
-                    Document document = cursor.next();
-                    ArrayList<?> values = null;
-                    String preparedQuery = "Insert into " + tableName + " values (?,?,?)";
-                    System.out.println(preparedQuery);
-                    if(condition){
-                        tableName = tableName.replaceAll("_"," ");
-                    }
-                    if (type.equalsIgnoreCase("INT")) {
-                        values = (ArrayList<Integer>) document.get(tableName);
-                    } else {
-                        values = (ArrayList<String>) document.get(tableName);
-                    }
-                    for (int x = 0; x < values.size(); x++) {
+                    try {
+                        Document document = cursor.next();
+                        ArrayList<?> values = null;
+                        //Saber que tipo de dato es
+                        String preparedQuery = "Insert into " + tableName + " values (?,?,?)";
+                        if (condition) {
+                            tableName = tableName.replaceAll("_", " ");
+                        }
+                        if (type.equalsIgnoreCase("INT")) {
+                            values = (ArrayList<Integer>) document.get(tableName);
+                        } else {
+                            values = (ArrayList<String>) document.get(tableName);
+                        }
+                        //Insertar valores
+                        for (int x = 0; x < values.size(); x++) {
                             PreparedStatement psm = connection.prepareStatement(preparedQuery);
                             psm.setInt(1, pk++);
                             if (type.equalsIgnoreCase("INT")) {
@@ -373,11 +409,14 @@ public class NoSqlToSql {
                             psm.executeUpdate();
                         }
                         counter++;
-                    if(condition){
-                        tableName = tableName.replaceAll(" ","_");
-                    }
+                        if (condition) {
+                            tableName = tableName.replaceAll(" ", "_");
+                        }
+                    } catch (Exception e) {
+
                     }
                 }
+            }
             }
         }
     /**
@@ -390,11 +429,13 @@ public class NoSqlToSql {
      * @throws SQLException    Si ocurre un error al ejecutar consultas SQL.
      */
             private void createFirstTable (TableTypesClass tableTypesClass, Connection connection,MongoCollection<Document> collection,String schema) throws SQLException {
+                //preparar sentencia
                 String query = "Create table if not exists " + schema + " (" +
                         "id INT AUTO_INCREMENT PRIMARY KEY,";
                 for (int i = 0; i < tableTypesClass.getDataType().size(); i++) {
                     String type = "";
                     String name = "";
+                    //Saber el tipo de dato
                     if(tableTypesClass.getDataType().get(i).contains("[") ||
                             tableTypesClass.getDataType().get(i).contains("{")){
                         continue;
@@ -415,54 +456,54 @@ public class NoSqlToSql {
                 }
                 query=query.substring(0,query.length()-1)+" );";
                 Statement st = connection.createStatement();
-                System.out.println(query);
                 st.executeUpdate(query);
                 st.close();
                 FindIterable<Document> documents = collection.find();
                 MongoCursor<Document> cursor = documents.iterator();
                 int pk = 1;
+                //Recorrer toda la base de datos mongoDB
                 while (cursor.hasNext()) {
-                    String queryInsert = "Insert into "+schema+" values(";
-                    for(int i = 0; i < tableTypesClass.getDataType().size(); i++){
-                        if(tableTypesClass.getDataType().get(i).contains("[") || tableTypesClass.getDataType().get(i).contains("{")){
-                            continue;
-                        }else{
-                            queryInsert+="?";
-                                queryInsert+=",";
+                    try {
+                        String queryInsert = "Insert into " + schema + " values(";
+                        for (int i = 0; i < tableTypesClass.getDataType().size(); i++) {
+                            if (tableTypesClass.getDataType().get(i).contains("[") || tableTypesClass.getDataType().get(i).contains("{")) {
+                                continue;
+                            } else {
+                                queryInsert += "?";
+                                queryInsert += ",";
+                            }
                         }
-                    }
-                    queryInsert+="?);";
-                    System.out.println(queryInsert);
-                    Document document = cursor.next();
-                    PreparedStatement psm = connection.prepareStatement(queryInsert);
-                    psm.setInt(1,pk);
-                    int counter = 2;
-                    for(int i = 0; i < tableTypesClass.getName().size(); i++){
-                        if(tableTypesClass.getName().get(i).contains("|")){
-                            tableTypesClass.getName().set(i,tableTypesClass.getName().get(i).replaceAll("_"," ").
-                                    substring(0,tableTypesClass.getName().get(i).length()-1));
+                        queryInsert += "?);";
+                        Document document = cursor.next();
+                        PreparedStatement psm = connection.prepareStatement(queryInsert);
+                        psm.setInt(1, pk);
+                        int counter = 2;
+                        //Recorrer todos los tipos de dato y formatearlos
+                        for (int i = 0; i < tableTypesClass.getName().size(); i++) {
+                            if (tableTypesClass.getName().get(i).contains("|")) {
+                                tableTypesClass.getName().set(i, tableTypesClass.getName().get(i).replaceAll("_", " ").
+                                        substring(0, tableTypesClass.getName().get(i).length() - 1));
 
+                            }
+                            if (tableTypesClass.getDataType().get(i).equalsIgnoreCase("VARCHAR")) {
+                                psm.setString(counter, document.getString(tableTypesClass.getName().get(i)));
+                                counter++;
+                            } else if (tableTypesClass.getDataType().get(i).contains("{") ||
+                                    tableTypesClass.getDataType().get(i).contains("[")) {
+                                continue;
+                            } else if (tableTypesClass.getDataType().get(i).equalsIgnoreCase("boolean")) {
+                                psm.setBoolean(counter, document.getBoolean(tableTypesClass.getName().get(i)));
+                                counter++;
+                            } else {
+                                psm.setInt(counter, document.getInteger(tableTypesClass.getName().get(i)));
+                                counter++;
+                            }
                         }
-                        if(tableTypesClass.getDataType().get(i).equalsIgnoreCase("VARCHAR")){
-                            psm.setString(counter, document.getString(tableTypesClass.getName().get(i)));
-                            counter++;
-                        }
-                        else if(tableTypesClass.getDataType().get(i).contains("{") ||
-                        tableTypesClass.getDataType().get(i).contains("[")){
-                            continue;
-                        }
-                        else if(tableTypesClass.getDataType().get(i).equalsIgnoreCase("boolean")){
-                            psm.setBoolean(counter,document.getBoolean(tableTypesClass.getName().get(i)));
-                            counter++;
-                        }
-                        else{
-                            psm.setInt(counter,document.getInteger(tableTypesClass.getName().get(i)));
-                            counter++;
-                        }
-                        System.out.println(tableTypesClass.getName().get(i));
+                        psm.executeUpdate();
+                        pk++;
+                    } catch (Exception e) {
+
                     }
-                    psm.executeUpdate();
-                    pk++;
                 }
             }
         }

@@ -30,6 +30,8 @@ public class Conexion {
 
     public static final String USER = "root";
     public static final String PASSWORD = "admin";
+    private static final String MONGODATABASE = "convertidor";
+    private static final String JDBC_MYSQL_LOCALHOST = "jdbc:mysql://localhost/";
     private Connection conexion = null;
     @Getter
     @Setter
@@ -45,12 +47,11 @@ public class Conexion {
             Class.forName("com.mysql.jdbc.Driver");
             if(schema == null){
                 // Verifica si se ha especificado un esquema (base de datos)
-                conexion = DriverManager.getConnection("jdbc:mysql://localhost/", USER,PASSWORD);
+                conexion = DriverManager.getConnection(JDBC_MYSQL_LOCALHOST, USER,PASSWORD);
             }
             else{
                 // Establece la conexión sin especificar un esquema
-                conexion = DriverManager.getConnection("jdbc:mysql://localhost/"+schema,USER,PASSWORD);
-                System.out.println("Hago esta");
+                conexion = DriverManager.getConnection(JDBC_MYSQL_LOCALHOST+schema,USER,PASSWORD);
             }
         } catch (Exception e) {
           JOptionPane.showMessageDialog( null,"No se ha podido conectar con la base de datos");
@@ -75,7 +76,6 @@ public class Conexion {
             Statement st = conexion.createStatement();
             // Ejecuta la consulta para crear el esquema si no existe
             st.executeUpdate("Create Schema if not exists " + schema);
-            System.out.println("Modificaciones");
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -118,13 +118,7 @@ public class Conexion {
             // Crea un cliente de MongoDB y se conecta al servidor local
             MongoClient client = MongoClients
                     .create("mongodb://localhost:27017/");
-            MongoDatabase db = client.getDatabase("practica04"); // Llamada a la base de datos
-            System.out.println("accede a bd " + db.getName()); // Muestra nombre de la base de datos
-            try{
-                db.createCollection(schema);
-            }catch (Exception ex){
-
-            }
+            MongoDatabase db = client.getDatabase(MONGODATABASE); // Llamada a la base de datos
             collection = db.getCollection(schema);
         }catch(Exception e){
             JOptionPane.showMessageDialog( null,"No se ha podido conectar con la base de datos");

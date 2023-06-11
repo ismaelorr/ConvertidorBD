@@ -43,7 +43,6 @@ public class ClassGenerator {
             }
             bufIn.write("}");
             bufIn.close();
-            System.out.println(neodatisClass.getAbsolutePath());
 
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null,"No se ha podido generar las clases correspondientes");

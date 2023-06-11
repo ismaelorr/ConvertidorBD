@@ -32,7 +32,8 @@ public class ClassConstants {
             "import org.neodatis.odb.core.query.IQuery;\n" +
             "import org.neodatis.odb.core.query.criteria.Where;\n " +
             "import java.sql.*; \n" +
-            "import org.neodatis.odb.impl.core.query.criteria.CriteriaQuery;\n";
+            "import org.neodatis.odb.impl.core.query.criteria.CriteriaQuery;\n" +
+            "import javax.swing.*;\n";
     /**
      * Ubicación de los archivos en el proyecto.
      */
